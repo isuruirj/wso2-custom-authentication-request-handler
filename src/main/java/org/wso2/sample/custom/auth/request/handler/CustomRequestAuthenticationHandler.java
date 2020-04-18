@@ -36,14 +36,14 @@ import java.util.List;
 public class CustomRequestAuthenticationHandler extends DefaultAuthenticationRequestHandler {
 
     private static final Log log = LogFactory.getLog(CustomRequestAuthenticationHandler.class);
-    private static List<String> serviceProviderNames = new ArrayList<String>();
+    private static List<String> serviceProviderNames;
 
     /**
      * To get the qualified service providers from the configuration file to drop the authenticators.
      *
      * @return
      */
-    public static List<String> getQualifiedServiceProviders() {
+    public static void getQualifiedServiceProviders() {
 
         String qualifiedServiceProviders = IdentityUtil.getProperty("CustomAuthenticationHandlerConfig.ServiceProviders");
         if (StringUtils.isEmpty(qualifiedServiceProviders)) {
@@ -54,7 +54,6 @@ public class CustomRequestAuthenticationHandler extends DefaultAuthenticationReq
             }
             serviceProviderNames = Arrays.asList(qualifiedServiceProviders.split("\\s*,\\s*"));
         }
-        return serviceProviderNames;
     }
 
     @Override
@@ -64,22 +63,23 @@ public class CustomRequestAuthenticationHandler extends DefaultAuthenticationReq
 
         super.handle(request, response, context);
 
-        if (response instanceof CommonAuthResponseWrapper) {
-            getQualifiedServiceProviders();
+        if (response instanceof CommonAuthResponseWrapper && ((CommonAuthResponseWrapper) response).isRedirect()) {
+            if (serviceProviderNames == null) {
+                serviceProviderNames = new ArrayList<String>();
+                getQualifiedServiceProviders();
+            }
             // Check if the query param removal need to be done for this tenant and sp
             String spTenantCombination = context.getServiceProviderName() + "@" + context.getTenantDomain();
             if (!serviceProviderNames.isEmpty() && serviceProviderNames.contains(spTenantCombination)) {
-                if (((CommonAuthResponseWrapper) response).isRedirect()) {
-                    String redirectUrl = ((CommonAuthResponseWrapper) response).getRedirectURL();
-                    if (StringUtils.isNotBlank(redirectUrl)) {
-                        redirectUrl = removeAuthenticatorsQueryParam(redirectUrl);
-                    }
-                    // Set the modified redirect URL
-                    try {
-                        response.sendRedirect(redirectUrl);
-                    } catch (IOException e) {
-                        throw new FrameworkException("Error while redirecting to authentication endpoint.", e);
-                    }
+                String redirectUrl = ((CommonAuthResponseWrapper) response).getRedirectURL();
+                if (StringUtils.isNotBlank(redirectUrl)) {
+                    redirectUrl = removeAuthenticatorsQueryParam(redirectUrl);
+                }
+                // Set the modified redirect URL
+                try {
+                    response.sendRedirect(redirectUrl);
+                } catch (IOException e) {
+                    throw new FrameworkException("Error while redirecting to authentication endpoint.", e);
                 }
             }
         }
@@ -99,6 +99,5 @@ public class CustomRequestAuthenticationHandler extends DefaultAuthenticationReq
 
         return url;
     }
-
 
 }
