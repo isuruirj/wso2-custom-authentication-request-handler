@@ -6,7 +6,7 @@
 
     <groupId>org.wso2.sample</groupId>
     <artifactId>org.wso2.sample.custom.auth.request.handler</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.0</version>
 
 
     <dependencies>

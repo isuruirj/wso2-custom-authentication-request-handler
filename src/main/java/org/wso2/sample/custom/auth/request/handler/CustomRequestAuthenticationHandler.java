@@ -45,7 +45,7 @@ public class CustomRequestAuthenticationHandler extends DefaultAuthenticationReq
      */
     public static List<String> getQualifiedServiceProviders() {
 
-        String qualifiedServiceProviders = IdentityUtil.getProperty("VonageCustom.ServiceProviders");
+        String qualifiedServiceProviders = IdentityUtil.getProperty("CustomAuthenticationHandlerConfig.ServiceProviders");
         if (StringUtils.isEmpty(qualifiedServiceProviders)) {
             log.warn("No Service providers has been defined to remove authentication query param.");
         } else {
@@ -65,9 +65,10 @@ public class CustomRequestAuthenticationHandler extends DefaultAuthenticationReq
         super.handle(request, response, context);
 
         if (response instanceof CommonAuthResponseWrapper) {
-            // Check if the query param removal need to be done for this tenant
             getQualifiedServiceProviders();
-            if (!serviceProviderNames.isEmpty() && serviceProviderNames.contains(context.getServiceProviderName())) {
+            // Check if the query param removal need to be done for this tenant and sp
+            String spTenantCombination = context.getServiceProviderName() + "@" + context.getTenantDomain();
+            if (!serviceProviderNames.isEmpty() && serviceProviderNames.contains(spTenantCombination)) {
                 if (((CommonAuthResponseWrapper) response).isRedirect()) {
                     String redirectUrl = ((CommonAuthResponseWrapper) response).getRedirectURL();
                     if (StringUtils.isNotBlank(redirectUrl)) {
